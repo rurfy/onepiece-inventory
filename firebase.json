@@ -1,0 +1,25 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "one-piece-card-database",
+                    "appId": "1:325621015091:android:8698e3e573c90c4bb2f946",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "one-piece-card-database",
+                    "configurations": {
+                        "android": "1:325621015091:android:8698e3e573c90c4bb2f946",
+                        "ios": "1:325621015091:ios:dd43a8465895715cb2f946",
+                        "macos": "1:325621015091:ios:dd43a8465895715cb2f946",
+                        "web": "1:325621015091:web:110ab7c237c6a4ddb2f946",
+                        "windows": "1:325621015091:web:d8acf8a0c85a94edb2f946"
+                    }
+                }
+            }
+        }
+    }
+}
