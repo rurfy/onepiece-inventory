@@ -1,0 +1,175 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775583149803,
+  "projectRoot": "/Users/c.richter/projects/onepiece-inventory",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "lib"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "android": {
+      "path": "android",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1775583149773,
+      "keyFiles": [
+        "build.gradle.kts",
+        "gradle.properties",
+        "settings.gradle.kts"
+      ]
+    },
+    "ios": {
+      "path": "ios",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775583149773,
+      "keyFiles": []
+    },
+    "lib": {
+      "path": "lib",
+      "purpose": "Library code",
+      "fileCount": 2,
+      "lastAccessed": 1775583149774,
+      "keyFiles": [
+        "firebase_options.dart",
+        "main.dart"
+      ]
+    },
+    "linux": {
+      "path": "linux",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775583149778,
+      "keyFiles": [
+        "CMakeLists.txt"
+      ]
+    },
+    "macos": {
+      "path": "macos",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775583149779,
+      "keyFiles": []
+    },
+    "web": {
+      "path": "web",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775583149780,
+      "keyFiles": [
+        "favicon.png",
+        "index.html",
+        "manifest.json"
+      ]
+    },
+    "windows": {
+      "path": "windows",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775583149781,
+      "keyFiles": [
+        "CMakeLists.txt"
+      ]
+    },
+    "android/app": {
+      "path": "android/app",
+      "purpose": "Application code",
+      "fileCount": 2,
+      "lastAccessed": 1775583149782,
+      "keyFiles": [
+        "build.gradle.kts",
+        "google-services.json"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "",
+      "accessCount": 6,
+      "lastAccessed": 1775587244595,
+      "type": "directory"
+    },
+    {
+      "path": "firebase.json",
+      "accessCount": 5,
+      "lastAccessed": 1775587416938,
+      "type": "file"
+    },
+    {
+      "path": "lib/firebase_options.dart",
+      "accessCount": 5,
+      "lastAccessed": 1775587425054,
+      "type": "file"
+    },
+    {
+      "path": "lib/main.dart",
+      "accessCount": 4,
+      "lastAccessed": 1775587250748,
+      "type": "file"
+    },
+    {
+      "path": "pubspec.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1775583449516,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775583449698,
+      "type": "file"
+    },
+    {
+      "path": ".metadata",
+      "accessCount": 1,
+      "lastAccessed": 1775583458260,
+      "type": "file"
+    },
+    {
+      "path": "analysis_options.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1775583458326,
+      "type": "file"
+    },
+    {
+      "path": "web/manifest.json",
+      "accessCount": 1,
+      "lastAccessed": 1775583462107,
+      "type": "file"
+    },
+    {
+      "path": "web/index.html",
+      "accessCount": 1,
+      "lastAccessed": 1775583540278,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

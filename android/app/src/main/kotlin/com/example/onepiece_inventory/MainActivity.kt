@@ -1,5 +1,0 @@
-package com.example.onepiece_inventory
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()
