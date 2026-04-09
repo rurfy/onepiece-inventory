@@ -4,7 +4,7 @@ import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 
 const firebaseConfig = {
   apiKey: "AIzaSyBN0w8KAANf3ZBbdg8gnhSARidAeP0f2p0",
-  authDomain: "one-piece-card-database.firebaseapp.com",
+  authDomain: "onepiece-inventory-christophers-projects-6658328a.vercel.app",
   projectId: "one-piece-card-database",
   storageBucket: "one-piece-card-database.firebasestorage.app",
   messagingSenderId: "325621015091",
