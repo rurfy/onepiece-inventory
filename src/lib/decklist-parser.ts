@@ -19,8 +19,8 @@ export function parseDeckList(text: string): ParseResult {
 
     let match: RegExpMatchArray | null;
 
-    // Format: "4x OP01-001" or "4X OP01-001"
-    match = line.match(/^(\d+)\s*[xX]\s+([A-Z]+\d*-?\d+)/);
+    // Format: "4x OP01-001", "4X OP01-001", or "4xOP01-001"
+    match = line.match(/^(\d+)\s*[xX]\s*([A-Z]+\d*-?\d+)/);
     if (match) {
       cards.push({ card_code: match[2], quantity: parseInt(match[1]) });
       continue;

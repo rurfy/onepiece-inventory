@@ -1,26 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onSnapshot } from "firebase/firestore";
-import { summaryDoc } from "@/lib/firestore";
+import { useMemo } from "react";
+import { useCollection } from "./use-collection";
+import { usePrices } from "./use-price";
 import { CollectionSummary } from "@/types/card";
-import { useAuth } from "@/lib/auth-context";
 
 export function useCollectionSummary() {
-  const { user } = useAuth();
-  const [summary, setSummary] = useState<CollectionSummary | null>(null);
+  const { cards, loading: cardsLoading } = useCollection();
+  const printIds = useMemo(() => cards.map((c) => c.print_id), [cards]);
+  const { prices, loading: pricesLoading } = usePrices(printIds);
 
-  useEffect(() => {
-    if (!user) return;
+  return useMemo<CollectionSummary | null>(() => {
+    if (cardsLoading) return null;
+    if (cards.length > 0 && pricesLoading) return null;
 
-    const unsubscribe = onSnapshot(summaryDoc(user.uid), (snap) => {
-      if (snap.exists()) {
-        setSummary(snap.data() as CollectionSummary);
-      }
-    });
+    const totalCards = cards.reduce((sum, c) => sum + c.quantity, 0);
+    const totalValue = cards.reduce((sum, c) => {
+      const p = prices.get(c.print_id);
+      const unit = p?.market_price ?? p?.inventory_price ?? 0;
+      return sum + unit * c.quantity;
+    }, 0);
 
-    return () => unsubscribe();
-  }, [user]);
-
-  return summary;
+    return { totalCards, totalValue, lastUpdated: Date.now() };
+  }, [cards, cardsLoading, prices, pricesLoading]);
 }

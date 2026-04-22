@@ -2,16 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/firebase";
-import { GoogleAuthProvider, OAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type Provider = "google" | "apple" | "discord";
+type Provider = "google";
 
 const providerConfig: Record<Provider, { label: string; icon: string }> = {
   google: { label: "Google", icon: "G" },
-  apple: { label: "Apple", icon: "" },
-  discord: { label: "Discord", icon: "D" },
 };
 
 export function LoginButton({ provider }: { provider: Provider }) {
@@ -22,15 +20,7 @@ export function LoginButton({ provider }: { provider: Provider }) {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      if (provider === "google") {
-        await signInWithPopup(auth, new GoogleAuthProvider());
-      } else if (provider === "apple") {
-        await signInWithPopup(auth, new OAuthProvider("apple.com"));
-      } else if (provider === "discord") {
-        // Discord uses custom OAuth flow via API route
-        window.location.href = "/api/auth/discord";
-        return;
-      }
+      await signInWithPopup(auth, new GoogleAuthProvider());
       router.push("/collection");
     } catch (error) {
       console.error("Login failed:", error);

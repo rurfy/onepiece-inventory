@@ -47,3 +47,4 @@ next-env.d.ts
 # omc state
 .omc/state/
 .omc/logs/
+firebase-service-account.json

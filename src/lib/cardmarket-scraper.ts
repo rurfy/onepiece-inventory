@@ -1,8 +1,8 @@
 import * as cheerio from "cheerio";
+import { CATALOG_USER_AGENT } from "./catalog-source";
 
 const BASE_URL = "https://www.cardmarket.com/en/OnePiece";
-const USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+const USER_AGENT = CATALOG_USER_AGENT;
 
 export interface ScrapedPrice {
   print_id: string;

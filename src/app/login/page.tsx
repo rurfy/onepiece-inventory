@@ -10,8 +10,6 @@ export default function LoginPage() {
         </div>
         <div className="space-y-3">
           <LoginButton provider="google" />
-          <LoginButton provider="apple" />
-          <LoginButton provider="discord" />
         </div>
         <p className="text-center text-xs text-muted-foreground">
           Sign in to start tracking your collection
