@@ -1,31 +1,70 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775583149803,
+  "lastScanned": 1776851833419,
   "projectRoot": "/Users/c.richter/projects/onepiece-inventory",
   "techStack": {
-    "languages": [],
-    "frameworks": [],
-    "packageManager": null,
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "next",
+        "version": "16.2.2",
+        "category": "fullstack"
+      },
+      {
+        "name": "react",
+        "version": "19.2.4",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.4",
+        "category": "frontend"
+      }
+    ],
+    "packageManager": "npm",
     "runtime": null
   },
   "build": {
-    "buildCommand": null,
+    "buildCommand": "npm run build",
     "testCommand": null,
-    "lintCommand": null,
-    "devCommand": null,
-    "scripts": {}
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "next dev",
+      "build": "next build",
+      "start": "next start",
+      "lint": "eslint"
+    }
   },
   "conventions": {
     "namingStyle": null,
     "importStyle": null,
     "testPattern": null,
-    "fileOrganization": null
+    "fileOrganization": "type-based"
   },
   "structure": {
     "isMonorepo": false,
     "workspaces": [],
     "mainDirectories": [
-      "lib"
+      "public",
+      "src"
     ],
     "gitBranches": {
       "defaultBranch": "main",
@@ -34,140 +73,203 @@
   },
   "customNotes": [],
   "directoryMap": {
-    "android": {
-      "path": "android",
-      "purpose": null,
-      "fileCount": 4,
-      "lastAccessed": 1775583149773,
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 6,
+      "lastAccessed": 1776851833399,
       "keyFiles": [
-        "build.gradle.kts",
-        "gradle.properties",
-        "settings.gradle.kts"
+        "file.svg",
+        "globe.svg",
+        "manifest.json",
+        "next.svg",
+        "vercel.svg"
       ]
     },
-    "ios": {
-      "path": "ios",
-      "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1775583149773,
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1776851833400,
       "keyFiles": []
     },
-    "lib": {
-      "path": "lib",
-      "purpose": "Library code",
-      "fileCount": 2,
-      "lastAccessed": 1775583149774,
-      "keyFiles": [
-        "firebase_options.dart",
-        "main.dart"
-      ]
-    },
-    "linux": {
-      "path": "linux",
-      "purpose": null,
-      "fileCount": 2,
-      "lastAccessed": 1775583149778,
-      "keyFiles": [
-        "CMakeLists.txt"
-      ]
-    },
-    "macos": {
-      "path": "macos",
+    "state": {
+      "path": "state",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1775583149779,
-      "keyFiles": []
-    },
-    "web": {
-      "path": "web",
-      "purpose": null,
-      "fileCount": 3,
-      "lastAccessed": 1775583149780,
+      "lastAccessed": 1776851833408,
       "keyFiles": [
-        "favicon.png",
-        "index.html",
-        "manifest.json"
+        "cancel-signal-state.json"
       ]
     },
-    "windows": {
-      "path": "windows",
-      "purpose": null,
-      "fileCount": 2,
-      "lastAccessed": 1775583149781,
-      "keyFiles": [
-        "CMakeLists.txt"
-      ]
-    },
-    "android/app": {
-      "path": "android/app",
+    "src/app": {
+      "path": "src/app",
       "purpose": "Application code",
-      "fileCount": 2,
-      "lastAccessed": 1775583149782,
+      "fileCount": 4,
+      "lastAccessed": 1776851833410,
       "keyFiles": [
-        "build.gradle.kts",
-        "google-services.json"
+        "favicon.ico",
+        "globals.css",
+        "layout.tsx"
+      ]
+    },
+    "src/components": {
+      "path": "src/components",
+      "purpose": "UI components",
+      "fileCount": 3,
+      "lastAccessed": 1776851833410,
+      "keyFiles": [
+        "collection-value.tsx",
+        "price-badge.tsx",
+        "theme-toggle.tsx"
+      ]
+    },
+    "src/lib": {
+      "path": "src/lib",
+      "purpose": "Library code",
+      "fileCount": 6,
+      "lastAccessed": 1776851833410,
+      "keyFiles": [
+        "auth-context.tsx",
+        "cardmarket-scraper.ts",
+        "decklist-parser.ts"
+      ]
+    },
+    "src/types": {
+      "path": "src/types",
+      "purpose": "Type definitions",
+      "fileCount": 1,
+      "lastAccessed": 1776851833411,
+      "keyFiles": [
+        "card.ts"
       ]
     }
   },
   "hotPaths": [
     {
-      "path": "",
-      "accessCount": 6,
-      "lastAccessed": 1775587244595,
-      "type": "directory"
-    },
-    {
-      "path": "firebase.json",
-      "accessCount": 5,
-      "lastAccessed": 1775587416938,
+      "path": "src/lib/catalog-source.ts",
+      "accessCount": 7,
+      "lastAccessed": 1776858956222,
       "type": "file"
     },
     {
-      "path": "lib/firebase_options.dart",
-      "accessCount": 5,
-      "lastAccessed": 1775587425054,
-      "type": "file"
-    },
-    {
-      "path": "lib/main.dart",
+      "path": "src/lib/firebase.ts",
       "accessCount": 4,
-      "lastAccessed": 1775587250748,
+      "lastAccessed": 1776855109544,
       "type": "file"
     },
     {
-      "path": "pubspec.yaml",
-      "accessCount": 1,
-      "lastAccessed": 1775583449516,
+      "path": "src/app/login/page.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1776855505274,
       "type": "file"
     },
     {
-      "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1775583449698,
+      "path": "src/components/auth/login-button.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1776855512129,
       "type": "file"
     },
     {
-      "path": ".metadata",
-      "accessCount": 1,
-      "lastAccessed": 1775583458260,
+      "path": "src/lib/cardmarket-scraper.ts",
+      "accessCount": 3,
+      "lastAccessed": 1776859629187,
       "type": "file"
     },
     {
-      "path": "analysis_options.yaml",
-      "accessCount": 1,
-      "lastAccessed": 1775583458326,
+      "path": "src/lib/auth-context.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1776851933044,
       "type": "file"
     },
     {
-      "path": "web/manifest.json",
-      "accessCount": 1,
-      "lastAccessed": 1775583462107,
+      "path": "src/hooks/use-collection-summary.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776857237921,
       "type": "file"
     },
     {
-      "path": "web/index.html",
+      "path": "src/lib/decklist-parser.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776857375387,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/prices/refresh/route.ts",
+      "accessCount": 2,
+      "lastAccessed": 1776857493059,
+      "type": "file"
+    },
+    {
+      "path": "src/components/auth/user-menu.tsx",
       "accessCount": 1,
-      "lastAccessed": 1775583540278,
+      "lastAccessed": 1776851934398,
+      "type": "file"
+    },
+    {
+      "path": "next.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776854096327,
+      "type": "file"
+    },
+    {
+      "path": "firestore.rules",
+      "accessCount": 1,
+      "lastAccessed": 1776855218882,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/firestore.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776855218962,
+      "type": "file"
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776855234846,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-collection.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776855235236,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-decks.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776855236031,
+      "type": "file"
+    },
+    {
+      "path": ".firebaserc",
+      "accessCount": 1,
+      "lastAccessed": 1776855385394,
+      "type": "file"
+    },
+    {
+      "path": "src/components/collection-value.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1776857194065,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-price.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776857213912,
+      "type": "file"
+    },
+    {
+      "path": "src/types/card.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776857214212,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/catalog/refresh/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1776858989468,
       "type": "file"
     }
   ],

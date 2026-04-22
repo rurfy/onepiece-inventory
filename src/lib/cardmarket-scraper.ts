@@ -1,8 +1,8 @@
 import * as cheerio from "cheerio";
-import { CATALOG_USER_AGENT } from "./catalog-source";
 
 const BASE_URL = "https://www.cardmarket.com/en/OnePiece";
-const USER_AGENT = CATALOG_USER_AGENT;
+const USER_AGENT =
+  "Mozilla/5.0 (compatible; onepiece-inventory/0.1; +https://onepiece-inventory.vercel.app; contact chrissy.richter2710@gmail.com)";
 
 export interface ScrapedPrice {
   print_id: string;
