@@ -17,7 +17,7 @@ export function useCollectionSummary() {
     const totalCards = cards.reduce((sum, c) => sum + c.quantity, 0);
     const totalValue = cards.reduce((sum, c) => {
       const p = prices.get(c.print_id);
-      const unit = p?.market_price ?? p?.inventory_price ?? 0;
+      const unit = p?.market_price ?? 0;
       return sum + unit * c.quantity;
     }, 0);
 

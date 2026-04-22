@@ -27,7 +27,16 @@ export interface CollectionEntry {
 
 export interface Price {
   market_price: number | null;
-  inventory_price: number | null;
+  low_price: number | null;
+  mid_price: number | null;
+  high_price: number | null;
+  currency: string;
+  source: string;
+  source_category_id: number;
+  source_product_id: number;
+  subtype: string;
+  name: string;
+  rarity: string;
   fetchedAt: number;
 }
 

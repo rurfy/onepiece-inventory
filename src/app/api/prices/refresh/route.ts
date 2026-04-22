@@ -1,113 +1,140 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { scrapeSetPrices, SET_SLUGS } from "@/lib/cardmarket-scraper";
+import { TcgcsvSource, MergedPrice } from "@/lib/tcgcsv-source";
 
-// Initialize Firebase Admin (server-side only)
+export const maxDuration = 300;
+
 if (getApps().length === 0) {
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (serviceAccount) {
-    initializeApp({
-      credential: cert(JSON.parse(serviceAccount)),
-    });
+    initializeApp({ credential: cert(JSON.parse(serviceAccount)) });
   } else {
-    // Fallback for environments where default credentials are available
     initializeApp();
   }
 }
 
 const adminDb = getFirestore();
+const BATCH_LIMIT = 400;
 
-export async function POST(request: NextRequest) {
-  // Verify cron secret
+// TCGplayer category IDs. Extend this map as new games are added.
+const CATEGORY_MAP: Record<string, number> = {
+  onepiece: 68,
+  riftbound: 89,
+};
+
+function buildPriceDoc(row: MergedPrice, categoryId: number, now: number) {
+  return {
+    market_price: row.market,
+    low_price: row.low,
+    mid_price: row.mid,
+    high_price: row.high,
+    currency: "USD",
+    source: "tcgcsv",
+    source_category_id: categoryId,
+    source_product_id: row.productId,
+    subtype: row.subtype,
+    name: row.name,
+    rarity: row.rarity,
+    fetchedAt: now,
+  };
+}
+
+async function assertAuthorized(request: NextRequest): Promise<NextResponse | null> {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return null;
+}
 
-  // Optional: only refresh specific sets
+function resolveCategories(body: {
+  games?: string[];
+  categoryIds?: number[];
+}): number[] {
+  if (body.categoryIds?.length) return body.categoryIds;
+  if (body.games?.length) {
+    return body.games
+      .map((g) => CATEGORY_MAP[g.toLowerCase()])
+      .filter((n): n is number => typeof n === "number");
+  }
+  return [CATEGORY_MAP.onepiece];
+}
+
+export async function POST(request: NextRequest) {
+  const unauth = await assertAuthorized(request);
+  if (unauth) return unauth;
+
   const body = await request.json().catch(() => ({}));
-  const requestedSets: string[] | undefined = body.sets;
+  const categoryIds = resolveCategories(body);
+  const groupIds: number[] | undefined = Array.isArray(body.groupIds) ? body.groupIds : undefined;
+  const delayMs: number = typeof body.delayMs === "number" ? body.delayMs : 150;
 
-  const setsToScrape = requestedSets
-    ? Object.entries(SET_SLUGS).filter(([id]) => requestedSets.includes(id))
-    : Object.entries(SET_SLUGS);
+  const started = Date.now();
+  const now = Math.floor(started / 1000);
 
-  const results: { set: string; cards: number; errors: string[] }[] = [];
-  const now = Math.floor(Date.now() / 1000);
+  const perCategory: {
+    categoryId: number;
+    prices_merged: number;
+    prices_written: number;
+    unmatched: number;
+    groups_attempted: number;
+    errors: { groupId: number; error: string }[];
+  }[] = [];
 
-  for (const [setId, slug] of setsToScrape) {
-    try {
-      const prices = await scrapeSetPrices(slug);
+  for (const categoryId of categoryIds) {
+    const source = new TcgcsvSource(categoryId);
+    const { prices, groupsAttempted, errors } = await source.fetchAll({ groupIds, delayMs });
 
-      // Batch write to Firestore
+    const writable = prices.filter((p) => p.base_code);
+    const unmatched = prices.length - writable.length;
+
+    let written = 0;
+    for (let i = 0; i < writable.length; i += BATCH_LIMIT) {
+      const chunk = writable.slice(i, i + BATCH_LIMIT);
       const batch = adminDb.batch();
-      let count = 0;
-
-      for (const [cardCode, marketPrice] of prices) {
-        // Find matching print_ids for this card code
-        const printsSnap = await adminDb
-          .collection("prints")
-          .where("base_code", "==", cardCode)
-          .get();
-
-        for (const printDoc of printsSnap.docs) {
-          batch.set(
-            adminDb.collection("prices").doc(printDoc.id),
-            {
-              market_price: marketPrice,
-              currency: "EUR",
-              fetchedAt: now,
-            },
-            { merge: true }
-          );
-          count++;
-        }
+      for (const row of chunk) {
+        batch.set(
+          adminDb.collection("prices").doc(row.base_code),
+          buildPriceDoc(row, categoryId, now),
+          { merge: true }
+        );
+        written++;
       }
-
-      if (count > 0) {
-        await batch.commit();
-      }
-
-      results.push({ set: setId, cards: count, errors: [] });
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      results.push({ set: setId, cards: 0, errors: [msg] });
+      await batch.commit();
     }
 
-    // Rate limit between sets
-    await new Promise((r) => setTimeout(r, 2000));
+    perCategory.push({
+      categoryId,
+      prices_merged: prices.length,
+      prices_written: written,
+      unmatched,
+      groups_attempted: groupsAttempted.length,
+      errors,
+    });
   }
-
-  const totalCards = results.reduce((sum, r) => sum + r.cards, 0);
-  const totalErrors = results.filter((r) => r.errors.length > 0).length;
 
   return NextResponse.json({
     success: true,
+    source: "tcgcsv",
     timestamp: new Date().toISOString(),
-    summary: {
-      sets_scraped: results.length,
-      total_cards_updated: totalCards,
-      sets_with_errors: totalErrors,
-    },
-    results,
+    duration_ms: Date.now() - started,
+    categories: perCategory,
   });
 }
 
-// Also support GET for easy testing (still requires auth)
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauth = await assertAuthorized(request);
+  if (unauth) return unauth;
 
   return NextResponse.json({
     status: "ok",
-    available_sets: Object.keys(SET_SLUGS),
-    usage: "POST with optional { sets: ['OP01', 'OP02'] } to refresh specific sets",
+    source: "tcgcsv",
+    available_games: Object.keys(CATEGORY_MAP),
+    category_map: CATEGORY_MAP,
+    usage:
+      "POST with optional { games: ['onepiece'], groupIds: [24637, ...], delayMs: 150 }. " +
+      "Omit everything to refresh all of One Piece.",
   });
 }
