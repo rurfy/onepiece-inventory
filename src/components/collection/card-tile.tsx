@@ -27,7 +27,7 @@ export function CardTile({ card, price, onQuantityChange }: CardTileProps) {
           <div className="relative aspect-[63/88] bg-muted">
             {card.image_url ? (
               <Image
-                src={card.image_url}
+                src={`/api/img/${card.print_id}`}
                 alt={card.name}
                 fill
                 className="object-cover"

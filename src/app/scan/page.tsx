@@ -189,7 +189,7 @@ export default function ScanPage() {
                     <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
                       {m.image_url && (
                         <Image
-                          src={m.image_url}
+                          src={`/api/img/${m.print_id}`}
                           alt={m.name}
                           fill
                           sizes="56px"
