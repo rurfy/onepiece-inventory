@@ -123,16 +123,27 @@ export async function POST(request: NextRequest) {
   const pageComplete = snap.size < limit;
   const nextCursor = pageComplete ? null : lastDocId;
 
-  // Update consolidated lookup index + cursor state.
-  const patch: Record<string, unknown> = {
-    updatedAt: now,
-    cursor: nextCursor,
-    complete: pageComplete,
-  };
-  for (const [printId, h] of hashes) {
-    patch[`entries.${printId}`] = h;
+  // Update consolidated lookup index + cursor state. Admin SDK `set({merge:true})`
+  // treats dot-in-key as a literal field name, NOT a field path, so we have to
+  // reach for update() to land entries inside the nested `entries` map.
+  if (!indexSnap.exists) {
+    await indexRef.set({
+      entries: Object.fromEntries(hashes),
+      cursor: nextCursor,
+      complete: pageComplete,
+      updatedAt: now,
+    });
+  } else {
+    const updates: Record<string, unknown> = {
+      updatedAt: now,
+      cursor: nextCursor,
+      complete: pageComplete,
+    };
+    for (const [printId, h] of hashes) {
+      updates[`entries.${printId}`] = h;
+    }
+    await indexRef.update(updates);
   }
-  await indexRef.set(patch, { merge: true });
 
   return NextResponse.json({
     success: true,
