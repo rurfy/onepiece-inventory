@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAdminApp } from "@/lib/firebase-admin";
 import { dhash, hamming, confidence } from "@/lib/phash";
 
 export const maxDuration = 60;
 
-if (getApps().length === 0) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (serviceAccount) {
-    initializeApp({ credential: cert(JSON.parse(serviceAccount)) });
-  } else {
-    initializeApp();
-  }
-}
-
+getAdminApp();
 const adminDb = getFirestore();
 const INDEX_DOC_PATH = "indexes/phash";
 const TOP_K = 5;

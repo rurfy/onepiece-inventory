@@ -1,19 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAdminApp } from "@/lib/firebase-admin";
 import { CATALOG_USER_AGENT } from "@/lib/catalog-source";
 
 export const maxDuration = 30;
 
-if (getApps().length === 0) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (serviceAccount) {
-    initializeApp({ credential: cert(JSON.parse(serviceAccount)) });
-  } else {
-    initializeApp();
-  }
-}
-
+getAdminApp();
 const adminDb = getFirestore();
 
 /**
