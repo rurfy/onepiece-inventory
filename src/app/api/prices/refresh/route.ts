@@ -92,9 +92,18 @@ export async function POST(request: NextRequest) {
     prices_fetched: number;
     prices_out_of_scope: number;
     prices_written: number;
+    alt_art_via_mapping: number;
     groups_attempted: number;
     errors: { groupId: number; error: string }[];
   }[] = [];
+
+  // Per-product → Bandai print_id mapping (built offline by tcg-mapping),
+  // used to disambiguate alt-art variants that all share a base Number.
+  const mappingDoc = await adminDb.doc("indexes/tcg-mapping").get();
+  const mapping = (mappingDoc.data()?.mappings ?? {}) as Record<
+    string,
+    { print_id: string }
+  >;
 
   for (const categoryId of categoryIds) {
     const source = new TcgcsvSource(categoryId);
@@ -113,18 +122,27 @@ export async function POST(request: NextRequest) {
     }
     const unmatchedScope = prices.length - scoped.length;
 
-    // Multiple products can share a Number within the same group (base +
-    // alt arts + parallels). Keep the lowest market price — conventionally
-    // the base print. Alt-art-specific pricing is a future upgrade.
-    const byBaseCode = new Map<string, MergedPrice>();
+    // Resolve each product to a Bandai print_id. Mapping wins when present
+    // (handles _p1/_p2 alt-art variants). Fall back to the raw number for
+    // products that aren't mapped yet — still correct for base cards.
+    const byPrintId = new Map<string, MergedPrice>();
+    let alt_art_mapped = 0;
     for (const row of scoped) {
-      const existing = byBaseCode.get(row.base_code);
-      if (!existing) { byBaseCode.set(row.base_code, row); continue; }
+      const mapped = mapping[String(row.productId)]?.print_id;
+      const printId = mapped ?? row.base_code;
+      if (mapped && mapped !== row.base_code) alt_art_mapped++;
+      const existing = byPrintId.get(printId);
+      if (!existing) {
+        byPrintId.set(printId, { ...row, base_code: printId });
+        continue;
+      }
+      // Collision on the resolved print_id (rare — means two products
+      // mapped to the same card). Keep the lowest price.
       const a = row.market ?? row.low ?? Number.POSITIVE_INFINITY;
       const b = existing.market ?? existing.low ?? Number.POSITIVE_INFINITY;
-      if (a < b) byBaseCode.set(row.base_code, row);
+      if (a < b) byPrintId.set(printId, { ...row, base_code: printId });
     }
-    const writable = [...byBaseCode.values()];
+    const writable = [...byPrintId.values()];
 
     let written = 0;
     for (let i = 0; i < writable.length; i += BATCH_LIMIT) {
@@ -145,6 +163,7 @@ export async function POST(request: NextRequest) {
       prices_fetched: prices.length,
       prices_out_of_scope: unmatchedScope,
       prices_written: written,
+      alt_art_via_mapping: alt_art_mapped,
       groups_attempted: groupsAttempted.length,
       errors,
     });
