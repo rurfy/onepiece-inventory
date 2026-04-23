@@ -15,6 +15,27 @@ const CATEGORY_MAP: Record<string, number> = {
   riftbound: 89,
 };
 
+/**
+ * Parse a TCGplayer group abbreviation into the Bandai-style set codes it
+ * covers. Examples:
+ *   "EB-01"       → ["EB01"]
+ *   "OP15-EB04"   → ["OP15", "EB04"]     (compound release)
+ *   "OP-PR"       → ["OP", "PR"]         (promos; card numbers use "P-")
+ *   "PRB-01"      → ["PRB01"]
+ */
+function groupCodesFromAbbrev(abbr: string): string[] {
+  const parts = abbr.split(/[-\s_]/).filter(Boolean);
+  const codes: string[] = [];
+  for (const part of parts) {
+    if (/^\d+$/.test(part) && codes.length > 0) {
+      codes[codes.length - 1] += part;
+    } else {
+      codes.push(part);
+    }
+  }
+  return codes.map((c) => c.toUpperCase());
+}
+
 function buildPriceDoc(row: MergedPrice, categoryId: number, now: number) {
   return {
     market_price: row.market,
@@ -68,9 +89,9 @@ export async function POST(request: NextRequest) {
 
   const perCategory: {
     categoryId: number;
-    prices_merged: number;
+    prices_fetched: number;
+    prices_out_of_scope: number;
     prices_written: number;
-    unmatched: number;
     groups_attempted: number;
     errors: { groupId: number; error: string }[];
   }[] = [];
@@ -79,8 +100,31 @@ export async function POST(request: NextRequest) {
     const source = new TcgcsvSource(categoryId);
     const { prices, groupsAttempted, errors } = await source.fetchAll({ groupIds, delayMs });
 
-    const writable = prices.filter((p) => p.base_code);
-    const unmatched = prices.length - writable.length;
+    // Only keep products whose TCGplayer group actually corresponds to the
+    // card's Bandai set. TCGplayer reuses numbers like "EB01-014" across
+    // promo groups (OP-PR) for unrelated printings — those would otherwise
+    // overwrite the canonical base-set price.
+    const scoped: MergedPrice[] = [];
+    for (const row of prices) {
+      if (!row.base_code) continue;
+      const setPrefix = row.base_code.split("-")[0].toUpperCase();
+      const codes = groupCodesFromAbbrev(row.groupAbbrev);
+      if (codes.includes(setPrefix)) scoped.push(row);
+    }
+    const unmatchedScope = prices.length - scoped.length;
+
+    // Multiple products can share a Number within the same group (base +
+    // alt arts + parallels). Keep the lowest market price — conventionally
+    // the base print. Alt-art-specific pricing is a future upgrade.
+    const byBaseCode = new Map<string, MergedPrice>();
+    for (const row of scoped) {
+      const existing = byBaseCode.get(row.base_code);
+      if (!existing) { byBaseCode.set(row.base_code, row); continue; }
+      const a = row.market ?? row.low ?? Number.POSITIVE_INFINITY;
+      const b = existing.market ?? existing.low ?? Number.POSITIVE_INFINITY;
+      if (a < b) byBaseCode.set(row.base_code, row);
+    }
+    const writable = [...byBaseCode.values()];
 
     let written = 0;
     for (let i = 0; i < writable.length; i += BATCH_LIMIT) {
@@ -90,7 +134,6 @@ export async function POST(request: NextRequest) {
         batch.set(
           adminDb.collection("prices").doc(row.base_code),
           buildPriceDoc(row, categoryId, now),
-          { merge: true }
         );
         written++;
       }
@@ -99,9 +142,9 @@ export async function POST(request: NextRequest) {
 
     perCategory.push({
       categoryId,
-      prices_merged: prices.length,
+      prices_fetched: prices.length,
+      prices_out_of_scope: unmatchedScope,
       prices_written: written,
-      unmatched,
       groups_attempted: groupsAttempted.length,
       errors,
     });

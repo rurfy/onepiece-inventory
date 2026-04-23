@@ -51,6 +51,8 @@ export interface MergedPrice {
   mid: number | null;
   high: number | null;
   market: number | null;
+  groupAbbrev: string;
+  groupName: string;
 }
 
 interface TcgcsvEnvelope<T> {
@@ -92,10 +94,10 @@ export class TcgcsvSource {
     return env.results;
   }
 
-  async fetchGroup(groupId: number): Promise<MergedPrice[]> {
+  async fetchGroup(group: Pick<TcgcsvGroup, "groupId" | "abbreviation" | "name">): Promise<MergedPrice[]> {
     const [productsEnv, pricesEnv] = await Promise.all([
-      fetchJson<TcgcsvProduct>(`${TCGCSV_BASE}/${this.categoryId}/${groupId}/products`),
-      fetchJson<TcgcsvPrice>(`${TCGCSV_BASE}/${this.categoryId}/${groupId}/prices`),
+      fetchJson<TcgcsvProduct>(`${TCGCSV_BASE}/${this.categoryId}/${group.groupId}/products`),
+      fetchJson<TcgcsvPrice>(`${TCGCSV_BASE}/${this.categoryId}/${group.groupId}/prices`),
     ]);
 
     const productsById = new Map<number, TcgcsvProduct>();
@@ -116,6 +118,8 @@ export class TcgcsvSource {
         mid: price.midPrice,
         high: price.highPrice,
         market: price.marketPrice,
+        groupAbbrev: group.abbreviation ?? "",
+        groupName: group.name ?? "",
       });
     }
     return merged;
@@ -137,7 +141,7 @@ export class TcgcsvSource {
     for (const g of selected) {
       groupsAttempted.push(g.groupId);
       try {
-        const rows = await this.fetchGroup(g.groupId);
+        const rows = await this.fetchGroup(g);
         prices.push(...rows);
       } catch (err) {
         errors.push({
