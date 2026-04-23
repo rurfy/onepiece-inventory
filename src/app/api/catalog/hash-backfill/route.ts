@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldPath } from "firebase-admin/firestore";
 import { dhash, fetchImageBuffer } from "@/lib/phash";
 import { CATALOG_USER_AGENT } from "@/lib/catalog-source";
 
@@ -27,6 +27,22 @@ async function assertAuthorized(request: NextRequest): Promise<NextResponse | nu
   return null;
 }
 
+interface IndexDoc {
+  entries?: Record<string, string>;
+  cursor?: string | null;
+  complete?: boolean;
+  updatedAt?: number;
+}
+
+/**
+ * Paginated backfill — each call reads only `limit` prints starting from the
+ * cursor stored in the index doc, hashes those that don't yet have a `phash`,
+ * writes both the per-print field and the consolidated lookup index.
+ *
+ * On reaching the end of the collection the cursor is cleared and `complete`
+ * is set to true, so subsequent calls are no-ops until `{reset: true}` is
+ * passed (e.g. after new prints are added).
+ */
 export async function POST(request: NextRequest) {
   const unauth = await assertAuthorized(request);
   if (unauth) return unauth;
@@ -34,37 +50,60 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const limit: number = typeof body.limit === "number" ? body.limit : 500;
   const force: boolean = body.force === true;
+  const reset: boolean = body.reset === true;
   const delayMs: number = typeof body.delayMs === "number" ? body.delayMs : 100;
 
   const started = Date.now();
   const now = Math.floor(started / 1000);
 
-  const snap = await adminDb.collection("prints").get();
+  const indexRef = adminDb.doc(INDEX_DOC_PATH);
+  const indexSnap = await indexRef.get();
+  const index: IndexDoc = (indexSnap.data() ?? {}) as IndexDoc;
 
-  const targets: { printId: string; imageUrl: string }[] = [];
-  for (const doc of snap.docs) {
-    if (targets.length >= limit) break;
-    const data = doc.data();
-    if (!data.image_url) continue;
-    if (!force && typeof data.phash === "string" && data.phash.length === 64) continue;
-    targets.push({ printId: doc.id, imageUrl: data.image_url });
+  const cursor = reset ? undefined : index.cursor ?? undefined;
+  const alreadyComplete = !reset && index.complete === true && !force;
+  if (alreadyComplete) {
+    return NextResponse.json({
+      success: true,
+      message: "Backfill already complete. Pass { reset: true } to re-scan.",
+      index_size: Object.keys(index.entries ?? {}).length,
+    });
   }
+
+  let query = adminDb
+    .collection("prints")
+    .orderBy(FieldPath.documentId())
+    .limit(limit);
+  if (cursor) query = query.startAfter(cursor);
+
+  const snap = await query.get();
 
   const hashes = new Map<string, string>();
   const errors: { printId: string; error: string }[] = [];
+  let skippedAlreadyHashed = 0;
+  let skippedNoImage = 0;
 
-  for (const { printId, imageUrl } of targets) {
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    if (!data.image_url) {
+      skippedNoImage++;
+      continue;
+    }
+    if (!force && typeof data.phash === "string" && data.phash.length === 64) {
+      skippedAlreadyHashed++;
+      continue;
+    }
     try {
-      const img = await fetchImageBuffer(imageUrl, CATALOG_USER_AGENT);
+      const img = await fetchImageBuffer(data.image_url, CATALOG_USER_AGENT);
       const h = await dhash(img);
-      hashes.set(printId, h);
+      hashes.set(doc.id, h);
     } catch (err) {
-      errors.push({ printId, error: err instanceof Error ? err.message : String(err) });
+      errors.push({ printId: doc.id, error: err instanceof Error ? err.message : String(err) });
     }
     if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
   }
 
-  // Write computed hashes back to each print doc (batched).
+  // Write per-print phash fields in batches.
   const BATCH_LIMIT = 400;
   const entries = [...hashes.entries()];
   for (let i = 0; i < entries.length; i += BATCH_LIMIT) {
@@ -80,29 +119,32 @@ export async function POST(request: NextRequest) {
     await batch.commit();
   }
 
-  // Maintain the consolidated lookup index used at scan time. Merge new
-  // entries into whatever's already there so partial backfill runs
-  // accumulate into a complete index.
-  if (hashes.size > 0) {
-    const patch: Record<string, unknown> = { updatedAt: now };
-    for (const [printId, h] of hashes) {
-      patch[`entries.${printId}`] = h;
-    }
-    await adminDb.doc(INDEX_DOC_PATH).set(patch, { merge: true });
+  const lastDocId = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1].id : cursor ?? null;
+  const pageComplete = snap.size < limit;
+  const nextCursor = pageComplete ? null : lastDocId;
+
+  // Update consolidated lookup index + cursor state.
+  const patch: Record<string, unknown> = {
+    updatedAt: now,
+    cursor: nextCursor,
+    complete: pageComplete,
+  };
+  for (const [printId, h] of hashes) {
+    patch[`entries.${printId}`] = h;
   }
+  await indexRef.set(patch, { merge: true });
 
   return NextResponse.json({
     success: true,
     timestamp: new Date().toISOString(),
     duration_ms: Date.now() - started,
-    scanned: snap.size,
-    targeted: targets.length,
+    page_size: snap.size,
     hashed: hashes.size,
+    skipped_already_hashed: skippedAlreadyHashed,
+    skipped_no_image: skippedNoImage,
     errors,
-    remaining_estimate: snap.docs.filter((d) => {
-      const v = d.data();
-      return v.image_url && (force || typeof v.phash !== "string");
-    }).length - hashes.size,
+    cursor: nextCursor,
+    complete: pageComplete,
   });
 }
 
@@ -110,22 +152,16 @@ export async function GET(request: NextRequest) {
   const unauth = await assertAuthorized(request);
   if (unauth) return unauth;
 
-  const snap = await adminDb.collection("prints").get();
-  let total = 0;
-  let hashed = 0;
-  for (const d of snap.docs) {
-    total++;
-    if (typeof d.data().phash === "string") hashed++;
-  }
+  const indexRef = adminDb.doc(INDEX_DOC_PATH);
+  const indexSnap = await indexRef.get();
+  const index: IndexDoc = (indexSnap.data() ?? {}) as IndexDoc;
 
   return NextResponse.json({
     status: "ok",
-    total_prints: total,
-    hashed,
-    unhashed: total - hashed,
-    usage: "POST with optional { limit: 500, force: false, delayMs: 100 } to hash a slice of prints.",
+    index_size: Object.keys(index.entries ?? {}).length,
+    cursor: index.cursor ?? null,
+    complete: index.complete === true,
+    updatedAt: index.updatedAt ?? null,
+    usage: "POST with optional { limit: 500, delayMs: 100, force: false, reset: false } to continue backfill.",
   });
 }
-
-// Suppress unused-import warning if FieldValue isn't referenced.
-void FieldValue;
