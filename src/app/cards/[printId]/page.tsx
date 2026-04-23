@@ -121,7 +121,7 @@ export default function CardDetailPage() {
           {/* Card image */}
           <div className="relative aspect-[63/88] max-w-sm mx-auto rounded-2xl overflow-hidden shadow-lg">
             {card.image_url ? (
-              <Image src={card.image_url} alt={card.name} fill className="object-cover" sizes="384px" />
+              <Image src={card.image_url} alt={card.name} fill className="object-cover" sizes="384px" unoptimized />
             ) : (
               <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
                 No image available
@@ -141,7 +141,7 @@ export default function CardDetailPage() {
                   }`}
                 >
                   {v.image_url ? (
-                    <Image src={v.image_url} alt={v.label} fill className="object-cover" sizes="64px" />
+                    <Image src={v.image_url} alt={v.label} fill className="object-cover" sizes="64px" unoptimized />
                   ) : (
                     <div className="w-full h-full bg-muted" />
                   )}
