@@ -127,6 +127,12 @@ export default function CollectionPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
+              href="/scan"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Scan
+            </Link>
+            <Link
               href="/decks"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
